@@ -1,13 +1,13 @@
 """Stage 03: Compute embeddings for package descriptions.
 
 Reads data/combined_clean.parquet.
-Encodes every description with Qwen3-Embedding-0.6B running locally on MPS (Apple Silicon).
+Encodes every description with BAAI/bge-small-en-v1.5 (33M params, encoder-only).
+Runs on MPS (Apple Silicon) — encoder-only models are well-supported by PyTorch MPS.
 Writes:
-  data/embeddings.npy      — float32 [N, 1024], L2-normalized
+  data/embeddings.npy      — float32 [N, 384], L2-normalized
   data/embed_meta.parquet  — same row order: name, ecosystem, download_count, upload_date
 
 L2 normalization means cosine similarity = dot product in stage 05 (faster, simpler).
-No task prompt used — we are doing within-corpus document similarity, not retrieval.
 """
 
 import argparse
@@ -22,9 +22,9 @@ import pandas as pd
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data"
 
-MODEL_ID = "Qwen/Qwen3-Embedding-0.6B"
-DIM = 1024
-DEFAULT_BATCH_SIZE = 64  # safe for 8 GB unified memory; raise to 128 if no OOM
+MODEL_ID = "BAAI/bge-small-en-v1.5"
+DIM = 384
+DEFAULT_BATCH_SIZE = 256  # encoder-only model, MPS-friendly, large batches are fine
 
 log = logging.getLogger(__name__)
 
